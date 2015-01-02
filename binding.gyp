@@ -136,6 +136,9 @@
         'src/set-remote-description-observer.cc',
         'src/peerconnection.cc',
         'src/datachannel.cc',
+        'src/rtcstatsreport.cc',
+        'src/rtcstateresponse.cc',
+        'src/stats-observer.cc'
       ]
     }
   ]
