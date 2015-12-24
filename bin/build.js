@@ -91,18 +91,14 @@
         {'cwd': LIB_DIR},
         next
       );
-    } else {
-      console.log(': Updating depot_tools ... ');
-      spawn_log('git',
-        ['pull', 'origin', 'master'],
-        {'cwd': DEPOT_TOOLS_DIR},
-        next
-      );
+      return;
     }
+
+    next();
   }
 
   function clone_libwebrtc_repo() {
-    var next = update_clang;
+    var next = generate_build_scripts;
 
     if(!fs.existsSync(LIB_WEBRTC_DIR)) {
       console.log(': Cloning libwebrtc ... ');
@@ -111,23 +107,10 @@
         {'cwd': LIB_DIR},
         next
       );
-    } else {
-      console.log(': Updating libwebrtc ... ');
-      spawn_log('git',
-        ['pull', 'origin', 'master'],
-        {'cwd': LIB_WEBRTC_DIR},
-        next
-      );
+      return;
     }
-  }
 
-  function update_clang() {
-    var CLANG_SCRIPT_DIR = LIB_WEBRTC_DIR + '/chromium/src/tools/clang/scripts';
-    console.log(': Updating clang ... ');
-    spawn_log('bash',
-      ['update.sh'],
-      {'cwd': CLANG_SCRIPT_DIR},
-      generate_build_scripts);
+    next();
   }
 
   var timer = null;
@@ -163,7 +146,7 @@
     stopTimer();
 
     console.log(': Building libwebrtc ... ');
-    var args = ['-C', 'out/' + CONFIGURATION, 'wrtc_build'];
+    var args = ['-C', 'out/' + CONFIGURATION];
 
     process.chdir(LIB_WEBRTC_DIR);
     spawn_log(NINJA,
