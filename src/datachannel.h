@@ -13,7 +13,7 @@
 #include "talk/app/webrtc/datachannelinterface.h"
 #include "webrtc/base/thread.h"
 #include "webrtc/base/scoped_ptr.h"
-#include "webrtc/system_wrappers/interface/ref_count.h"
+#include "webrtc/system_wrappers/include/ref_count.h"
 
 #include "common.h"
 #include "nan.h"

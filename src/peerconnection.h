@@ -13,8 +13,9 @@
 #include "talk/app/webrtc/peerconnectioninterface.h"
 #include "webrtc/base/thread.h"
 #include "webrtc/base/scoped_ptr.h"
-#include "webrtc/system_wrappers/interface/ref_count.h"
+#include "webrtc/system_wrappers/include/ref_count.h"
 #include "datachannel.h"
+#include "rtcsessiondescription.h"
 
 #include "common.h"
 #include "nan.h"
@@ -114,6 +115,8 @@ public:
     NOTIFY_ADD_STREAM = 0x1 << 17, // 131072
     NOTIFY_REMOVE_STREAM = 0x1 << 18, // 262144
     GET_STATS_SUCCESS = 0x1 << 19, // 524288
+    CREATE_SESSION_DESCRIPTION_OBSERVER = 0x1 << 20,
+    SET_SESSION_DESCRIPTION_OBSERVER = 0x1 << 21,
 
     ERROR_EVENT = CREATE_OFFER_ERROR | CREATE_ANSWER_ERROR |
                   SET_LOCAL_DESCRIPTION_ERROR | SET_REMOTE_DESCRIPTION_ERROR |
@@ -125,7 +128,7 @@ public:
                   ICE_GATHERING_STATE_CHANGE
   };
 
-  PeerConnection();
+  PeerConnection(webrtc::PeerConnectionInterface::RTCConfiguration& configuration);
   ~PeerConnection();
 
   //
@@ -142,10 +145,15 @@ public:
 
   virtual void OnDataChannel( webrtc::DataChannelInterface* data_channel );
 
+  virtual void OnAddStream(webrtc::MediaStreamInterface* stream);
+  virtual void OnRemoveStream(webrtc::MediaStreamInterface* stream);
+
   //
   // Nodejs wrapping.
   //
-  static void Init( Handle<Object> exports );
+  static void Init(
+    rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> peerConnectionFactory,
+    Handle<Object> exports);
   static Nan::Persistent<Function> constructor;
   static NAN_METHOD(New);
 
@@ -160,9 +168,12 @@ public:
   static NAN_METHOD(GetLocalStreams);
   static NAN_METHOD(GetRemoteStreams);
   static NAN_METHOD(GetStreamById);
+  */
   static NAN_METHOD(AddStream);
+  /*
   static NAN_METHOD(RemoveStream);
   */
+  static NAN_METHOD(GetConfiguration);
   static NAN_METHOD(GetStats);
   static NAN_METHOD(Close);
 
@@ -174,6 +185,11 @@ public:
   static NAN_SETTER(ReadOnly);
 
   void QueueEvent(AsyncEventType type, void* data);
+
+  RTCSessionDescription* pendingLocalDescription = NULL;
+  RTCSessionDescription* pendingRemoteDescription = NULL;
+  RTCSessionDescription* currentLocalDescription = NULL;
+  RTCSessionDescription* currentRemoteDescription = NULL;
 
 private:
   static void Run(uv_async_t* handle, int status);
@@ -187,16 +203,18 @@ private:
   uv_async_t async;
   uv_loop_t *loop;
   std::queue<AsyncEvent> _events;
-  webrtc::PeerConnectionInterface::IceServers _iceServers;
-  webrtc::MediaConstraintsInterface* _mediaConstraints;
+
+  webrtc::PeerConnectionInterface::RTCConfiguration configuration;
 
   rtc::scoped_refptr<CreateOfferObserver> _createOfferObserver;
   rtc::scoped_refptr<CreateAnswerObserver> _createAnswerObserver;
   rtc::scoped_refptr<SetLocalDescriptionObserver> _setLocalDescriptionObserver;
   rtc::scoped_refptr<SetRemoteDescriptionObserver> _setRemoteDescriptionObserver;
 
-  rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> _jinglePeerConnectionFactory;
   rtc::scoped_refptr<webrtc::PeerConnectionInterface> _jinglePeerConnection;
+
+  static rtc::scoped_refptr<webrtc::PeerConnectionFactoryInterface> _jinglePeerConnectionFactory;
+
 };
 
 }

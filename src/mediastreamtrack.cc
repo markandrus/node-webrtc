@@ -5,7 +5,7 @@
 #include <string>
 
 #include "talk/app/webrtc/jsep.h"
-#include "webrtc/system_wrappers/interface/ref_count.h"
+#include "webrtc/system_wrappers/include/ref_count.h"
 
 #include "common.h"
 #include "mediastreamtrack.h"

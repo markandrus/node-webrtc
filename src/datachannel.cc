@@ -5,9 +5,10 @@
 #include <string>
 
 #include "talk/app/webrtc/jsep.h"
-#include "webrtc/system_wrappers/interface/ref_count.h"
+#include "webrtc/system_wrappers/include/ref_count.h"
 #include "common.h"
 #include "datachannel.h"
+#include "messageevent.h"
 
 using namespace node_webrtc;
 
@@ -193,7 +194,9 @@ void DataChannel::Run(uv_async_t* handle, int status)
 #endif
         //NanMakeWeakPersistent(callback, data, &MessageWeakCallback);
 
-        argv[0] = array;
+        v8::Local<::node_webrtc::MessageEvent::MessageEvent> event = ::node_webrtc::MessageEvent::create(
+          array, Nan::Null());
+        argv[0] = event;
         Nan::MakeCallback(dc, callback, 1, argv);
       } else {
         v8::Local<v8::String> str = Nan::New(data->message, data->size).ToLocalChecked();
@@ -259,7 +262,7 @@ NAN_METHOD(DataChannel::Send) {
     }
 
     v8::ArrayBuffer::Contents content = arraybuffer->Externalize();
-    rtc::Buffer buffer(content.Data(), content.ByteLength());
+    rtc::Buffer buffer((uint8_t*) content.Data(), content.ByteLength());
 
 #else
     v8::Local<v8::Object> arraybuffer = v8::Local<v8::Object>::Cast(info[0]);

@@ -13,7 +13,7 @@
 #include "talk/app/webrtc/mediastreaminterface.h"
 #include "talk/base/thread.h"
 #include "talk/base/scoped_ptr.h"
-#include "webrtc/system_wrappers/interface/ref_count.h"
+#include "webrtc/system_wrappers/include/ref_count.h"
 
 #include "common.h"
 #include "nan.h"
