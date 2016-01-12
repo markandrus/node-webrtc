@@ -1,8 +1,40 @@
 #include "asyncevent2.h"
-#include "peerconnection.h"
 
 using namespace node_webrtc;
 using namespace v8;
+
+AsyncEvent2::AsyncEvent2(
+    PeerConnection* pc,
+    PeerConnection::AsyncEventType asyncEventType,
+    Nan::Callback* onSuccess,
+    Nan::Callback* onFailure):
+  pc(pc),
+  onSuccess(onSuccess),
+  onFailure(onFailure),
+  asyncEventType(asyncEventType)
+{
+  this->resolver = new Nan::Persistent<Promise::Resolver>(
+    Promise::Resolver::New(Isolate::GetCurrent()));
+  Local<Promise> promise = this->GetPromise();
+  if (onSuccess) {
+    promise->Then(this->onSuccess->GetFunction());
+  }
+  if (onFailure) {
+    promise->Catch(this->onFailure->GetFunction());
+  }
+}
+
+AsyncEvent2::~AsyncEvent2()
+{
+  this->resolver->Reset();
+  delete this->resolver;
+}
+
+Local<Promise> AsyncEvent2::GetPromise()
+{
+  Nan::EscapableHandleScope scope;
+  return scope.Escape(Nan::New<Promise::Resolver>(*this->resolver)->GetPromise());
+}
 
 void AsyncEvent2::RejectWithError(const std::string& error)
 {

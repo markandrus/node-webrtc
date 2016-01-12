@@ -15,8 +15,6 @@ webrtc::SessionDescriptionInterface* parseSessionDescription(v8::Local<v8::Value
 
 v8::Local<v8::Object> convertSessionDescriptionInterfaceToJson(webrtc::SessionDescriptionInterface* sdi);
 
-webrtc::IceCandidateInterface* parseIceCandidate(v8::Local<v8::Value> value, std::string* error);
-
 webrtc::DataChannelInit* parseDataChannelInit(v8::Local<v8::Value> value, std::string* error);
 
 v8::Local<v8::String> signalingStateToString(webrtc::PeerConnectionInterface::SignalingState state);

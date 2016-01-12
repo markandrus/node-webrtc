@@ -1,18 +1,19 @@
 #include <node.h>
 #include <v8.h>
 
-#include "peerconnection.h"
-#include "datachannel.h"
-#include "mediastream2.h"
-#include "mediastreamtrack2.h"
-//#include "mediastream.h"
-//#include "mediastreamtrack.h"
-#include "rtcstatsreport.h"
-#include "rtcstatsresponse.h"
-#include "rtcsessiondescription.h"
-#include "rtcicecandidate.h"
+#include "data/datachannel.h"
+#include "media/capturer/filevideocapturer.h"
+#include "media/getusermedia.h"
+#include "media/mediastream.h"
+#include "media/mediastreamtrack.h"
+#include "media/recorder/mediarecorder.h"
 #include "rtcconfiguration.h"
-#include "getusermedia.h"
+#include "rtcicecandidate.h"
+#include "rtcpeerconnection.h"
+#include "rtcsessiondescription.h"
+#include "stats/rtcstatsreport.h"
+#include "stats/rtcstatsresponse.h"
+
 #include "talk/app/webrtc/peerconnectioninterface.h"
 #include "webrtc/base/scoped_ptr.h"
 #include "webrtc/base/scoped_ref_ptr.h"
@@ -56,13 +57,14 @@ static void setupPeerConnectionFactory(
 
 void init(v8::Handle<v8::Object> exports) {
   setupPeerConnectionFactory(signalingThread, workerThread, peerConnectionFactory);
-  node_webrtc::PeerConnection::Init(peerConnectionFactory, exports);
+
+  node_webrtc::FileVideoCapturer::Init(peerConnectionFactory, exports);
   node_webrtc::GetUserMedia::Init(peerConnectionFactory, exports);
+  node_webrtc::DataChannel::Init(exports);
+  node_webrtc::MediaRecorder::Init(exports);
   node_webrtc::MediaStream::Init(peerConnectionFactory, exports);
   node_webrtc::MediaStreamTrack::Init(exports);
-  node_webrtc::DataChannel::Init(exports);
-  // MediaStream::Init(exports);
-  // MediaStreamTrack::Init(exports);
+  node_webrtc::PeerConnection::Init(peerConnectionFactory, exports);
   node_webrtc::RTCStatsReport::Init(exports);
   node_webrtc::RTCStatsResponse::Init(exports);
   node_webrtc::RTCSessionDescription::Init(exports);

@@ -2,7 +2,6 @@
 #include <v8.h>
 #include "common.h"
 #include "createsessiondescriptionobserver.h"
-#include "peerconnection.h"
 #include "rtcsessiondescription.h"
 #include "utilities.h"
 

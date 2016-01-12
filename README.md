@@ -4,11 +4,10 @@
 
 # Preamble
 
-This open-source project provides a native module for NodeJS that supports a subset of standards-compliant WebRTC features. Specifically, the PeerConnection and DataChannel APIs. 
+This open-source project provides a native module for NodeJS that supports a subset of standards-compliant WebRTC features. Specifically, the PeerConnection, MediaStream, and DataChannel APIs. A couple of APIs are also included for developers who need to record or playback MediaStreams, including
 
-__MediaStream APIs are not supported__ in order to reduce the number of external dependencies and to make compilation faster and easier. In the future, support for MediaStreams may be added by proxying them over DataChannels. See [#156](https://github.com/js-platform/node-webrtc/issues/156) for more details and discussion.
-
-This project relies on a companion library, [libwebrtc](https://github.com/js-platform/libwebrtc).
+- [MediaRecorder](mediarecorder.md), for recording MediaStreams
+- [FileVideoCapturer](filevideocapturer.md), for playing back recorded MediaStreams
 
 # Contributing
 

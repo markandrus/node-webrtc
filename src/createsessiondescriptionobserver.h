@@ -2,7 +2,7 @@
 #define _CREATESESSIONDESCRIPTIONOBSERVER_H_
 
 #include "asyncevent2.h"
-#include "peerconnection.h"
+#include "rtcpeerconnection.h"
 #include "talk/app/webrtc/peerconnectioninterface.h"
 #include <nan.h>
 

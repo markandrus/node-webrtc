@@ -1,9 +1,10 @@
 #ifndef _SETSESSIONDESCRIPTIONOBSERVER_H_
 #define _SETSESSIONDESCRIPTIONOBSERVER_H_
 
+#include <nan.h>
+
 #include "asyncevent2.h"
-#include "peerconnection.h"
-#include "nan.h"
+#include "rtcpeerconnection.h"
 
 namespace node_webrtc {
 

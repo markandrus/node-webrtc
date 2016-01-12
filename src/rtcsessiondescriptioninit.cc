@@ -1,4 +1,3 @@
-#include <nan.h>
 #include "rtcsessiondescriptioninit.h"
 
 using namespace node_webrtc;
