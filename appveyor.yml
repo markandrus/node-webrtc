@@ -1,0 +1,16 @@
+environment:
+  DEPOT_TOOLS_WIN_TOOLCHAIN: 0
+
+  matrix:
+    - nodejs_version: 5.0.0
+      platform: x64
+      msvs_toolset: 12
+
+os: Visual Studio 2015
+
+install:
+  - scripts\build-appveyor.bat
+
+build: OFF
+test: OFF
+deploy: OFF

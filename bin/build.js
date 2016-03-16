@@ -8,7 +8,7 @@
   var spawn = require('child_process').spawn;
   var nopt = require('nopt');
 
-  var PROJECT_DIR = process.cwd();
+  var PROJECT_DIR = Path.join(__dirname, '..');
   var DEPOT_TOOLS_REPO = 'https://chromium.googlesource.com/chromium/tools/depot_tools.git';
   var LIB_WEBRTC_REPO = 'https://github.com/js-platform/libwebrtc.git';
   var LIB_DIR = PROJECT_DIR + '/third_party';
@@ -18,7 +18,7 @@
   var MAKE = 'make';
   var PYTHON = process.env['PYTHON'] || 'python';
   var NODE_GYP = PROJECT_DIR + '/node_modules/.bin/node-gyp';
-  var BUILD_DIR = Path.join(__dirname, '../build');
+  var BUILD_DIR = PROJECT_DIR + '/build';
 
   var knownOpts = {
     'target-arch': String,
@@ -46,6 +46,8 @@
   var MODULE_PATH = parsed['module_path'];
   var CONFIGURATION = parsed['configuration'] || 'Release';
   var IS_DEBUG = CONFIGURATION == 'Debug';
+
+  var IS_WIN = /^win/.test(PLATFORM);
 
   console.log("TARGET_ARCH="+TARGET_ARCH, "PLATFORM="+PLATFORM, "CONFIGURATION="+CONFIGURATION, "PYTHON="+PYTHON, "MODULE_PATH="+MODULE_PATH);
 
@@ -122,6 +124,10 @@
   }
 
   function update_clang() {
+    if (IS_WIN) {
+      return generate_build_scripts();
+    }
+
     var CLANG_SCRIPT_DIR = LIB_WEBRTC_DIR + '/chromium/src/tools/clang/scripts';
     console.log(': Updating clang ... ');
     spawn_log('bash',
@@ -150,9 +156,19 @@
     console.log(': Generating build scripts ... ');
     var args = ['webrtc/build/gyp_webrtc'];
 
+    var env = {
+      PYTHONPATH: Path.join('chromium', 'src', 'build'),
+      DEPOT_TOOLS_WIN_TOOLCHAIN: '0'
+    };
+
+    if (IS_WIN) {
+      env.NUMBER_OF_PROCESSORS = 1;
+    }
+
     process.chdir(LIB_WEBRTC_DIR);
     spawn_log(PYTHON,
       args,
+      { env: env },
       build
     );
 
@@ -181,6 +197,7 @@
     console.log(': Build complete\n');
   }
 
+  process.chdir(PROJECT_DIR);
   prepare_directories();
 
 })();
