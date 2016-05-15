@@ -13,28 +13,16 @@ env:
     - secure: "fu0XuIPY4LOzDlbz8f4tAdrqTxkFRzdlknHtbI2Cs3zSqafx8WKSfCIh/yRVjGVXLR+9Qk1MOsLhCkuzfE3iTcYmSE0mA+cmVoDXrb8sYdi3LWjm+SKsAj9Sm3mZY56Mg9gijy4xjuu16LcFxJIZSyr5kjT+UCrZ2Rg38vezbmQ="
     - secure: "gYv1HEWTR0p/cyoRd7qF/7TZsTWZ9walACVPxs4t/ZNluZyqcEsLNpH8hJMJ7wUmcYymqNpe9irZcvcXvsrh6YBjZnLYNIz7/iyIUBTSUA1l1NzTP7IsR6Rnt7H3YROk89xvF408n6GcrTrY8KoRtDlAq8Zp04oFsvf+/E6SCLs="
   matrix:
-    - TRAVIS_NODE_VERSION=0.10
-    - TRAVIS_NODE_VERSION=0.12
-    - TRAVIS_NODE_VERSION=4
-    - TRAVIS_NODE_VERSION=5
-    - TRAVIS_NODE_VERSION=6
+    - DOCKERFILE=Dockerfiles/Dockerfile.ubuntu-14.04.node-0.10
+    - DOCKERFILE=Dockerfiles/Dockerfile.ubuntu-15.10.node-4.x
+    - DOCKERFILE=Dockerfiles/Dockerfile.ubuntu-15.10.node-5.x
+    - DOCKERFILE=Dockerfiles/Dockerfile.ubuntu-15.10.node-6.x
+    - DOCKERFILE=Dockerfiles/Dockerfile.ubuntu-16.04.node-4.x
+    - DOCKERFILE=Dockerfiles/Dockerfile.ubuntu-16.04.node-5.x
+    - DOCKERFILE=Dockerfiles/Dockerfile.ubuntu-16.04.node-6.x
+    - DOCKERFILE=Dockerfiles/Dockerfile.fedora-23.node-4.x
+    - DOCKERFILE=Dockerfiles/Dockerfile.fedora-23.node-5.x
+    - DOCKERFILE=Dockerfiles/Dockerfile.fedora-23.node-6.x
 
 install:
-  - RUN="
-      docker run
-        -v `pwd`:/code
-        -w /code
-        -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-        -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-        node:$TRAVIS_NODE_VERSION
-    "
-  - $RUN npm install
-  - $RUN node_modules/.bin/node-pre-gyp install --build-from-source
-
-script:
-  - $RUN npm test
-  - if [[ $TRAVIS_TAG ]] ||
-       [[ `git show -s --format=%B $TRAVIS_COMMIT` == *'[publish binary]' ]];
-    then
-      $RUN node_modules/.bin/node-pre-gyp package publish;
-    fi
+  - docker build -t node-webrtc -f $DOCKERFILE .
