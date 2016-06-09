@@ -45,6 +45,7 @@
       },
       'cflags': [
         '-pthread',
+        '-fabi-version=7',
         '-fno-exceptions',
         '-fno-strict-aliasing',
         '-Wall',

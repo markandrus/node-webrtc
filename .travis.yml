@@ -30,6 +30,7 @@ install:
     "
   - $RUN npm install
   - $RUN node_modules/.bin/node-pre-gyp install --build-from-source
+  - strings $(find . -name wrtc.node) | grep ^GLIB | sort | uniq
 
 script:
   - $RUN npm test
