@@ -20,6 +20,23 @@
             }],
           ],
           'message': 'Downloading WebRTC libraries and headers',
+        },
+        {
+          'action_name': 'generate_code_from_webidl',
+          'inputs': ['idl'],
+          'outputs': ['src/idl'],
+          'conditions': [
+            ['OS=="win"', {
+              'action': [
+                'npm run generate-code-from-webidl',
+              ],
+            }, {
+              'action': [
+                'npm', 'run', 'generate-code-from-webidl',
+              ],
+            }],
+          ],
+          'message': 'Generating code from WebIDL',
         }
       ],
     },
@@ -96,6 +113,7 @@
         }],
       ],
       'include_dirs': [
+        '.',
         "<!(node -e \"require('nan')\")",
         'third_party/webrtc/include',
       ],
@@ -134,6 +152,25 @@
         'src/set-local-description-observer.cc',
         'src/set-remote-description-observer.cc',
         'src/stats-observer.cc',
+        'src/idl/rtcansweroptions.cc',
+        'src/idl/rtcbundlepolicy.cc',
+        'src/idl/rtcconfiguration.cc',
+        'src/idl/rtcicecredentialtype.cc',
+        'src/idl/rtciceserver.cc',
+        'src/idl/rtcicetransportpolicy.cc',
+        'src/idl/rtcofferoptions.cc',
+        'src/idl/rtcrtcpmuxpolicy.cc',
+        'src/idl/rtcsdptype.cc',
+        'src/idl/rtcsessiondescriptioninit.cc',
+        'src/idl/webrtc/bundlepolicy.cc',
+        'src/idl/webrtc/configuration.cc',
+        'src/idl/webrtc/fakeconstraints.cc',
+        'src/idl/webrtc/iceserver.cc',
+        'src/idl/webrtc/iceservers.cc',
+        'src/idl/webrtc/icetransportstype.cc',
+        'src/idl/webrtc/rtcofferansweroptions.cc',
+        'src/idl/webrtc/rtcpmuxpolicy.cc',
+        'src/idl/webrtc/sessiondescriptioninterface.cc',
       ]
     },
     {

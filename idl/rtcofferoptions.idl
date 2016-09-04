@@ -1,0 +1,6 @@
+dictionary RTCOfferOptions {
+  boolean iceRestart = false;
+  // NOTE(mroberts): Adding these back because they are useful.
+  boolean offerToReceiveAudio;
+  boolean offerToReceiveVideo;
+};

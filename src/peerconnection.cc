@@ -1,3 +1,4 @@
+#include <iostream>
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -15,8 +16,23 @@
 #include "set-local-description-observer.h"
 #include "set-remote-description-observer.h"
 #include "stats-observer.h"
+#include "src/idl/convert.h"
+#include "src/idl/either.h"
+#include "src/idl/rtcansweroptions.h"
+#include "src/idl/rtcofferoptions.h"
+#include "src/idl/rtcsessiondescriptioninit.h"
+#include "src/idl/webrtc/configuration.h"
+#include "src/idl/webrtc/fakeconstraints.h"
+#include "src/idl/webrtc/rtcofferansweroptions.h"
+#include "src/idl/webrtc/sessiondescriptioninterface.h"
 
+using node_webrtc::Either;
+using node_webrtc::Optional;
 using node_webrtc::PeerConnection;
+using node_webrtc::RTCAnswerOptions;
+using node_webrtc::RTCConfiguration;
+using node_webrtc::RTCOfferOptions;
+using node_webrtc::RTCSessionDescriptionInit;
 using v8::External;
 using v8::Function;
 using v8::FunctionTemplate;
@@ -28,6 +44,9 @@ using v8::Object;
 using v8::String;
 using v8::Uint32;
 using v8::Value;
+using webrtc::FakeConstraints;
+using webrtc::SessionDescriptionInterface;
+using RTCOfferAnswerOptions = webrtc::PeerConnectionInterface::RTCOfferAnswerOptions;
 
 Nan::Persistent<Function> PeerConnection::constructor;
 rtc::Thread* PeerConnection::_signalingThread;
@@ -37,29 +56,22 @@ rtc::Thread* PeerConnection::_workerThread;
 // PeerConnection
 //
 
-PeerConnection::PeerConnection()
+PeerConnection::PeerConnection(RTCConfiguration rtcConfiguration)
 : loop(uv_default_loop()) {
   _createOfferObserver = new rtc::RefCountedObject<CreateOfferObserver>(this);
   _createAnswerObserver = new rtc::RefCountedObject<CreateAnswerObserver>(this);
   _setLocalDescriptionObserver = new rtc::RefCountedObject<SetLocalDescriptionObserver>(this);
   _setRemoteDescriptionObserver = new rtc::RefCountedObject<SetRemoteDescriptionObserver>(this);
 
-  // FIXME: don't hardcode this, read from info instead
-  webrtc::PeerConnectionInterface::IceServer iceServer;
-  iceServer.uri = "stun:stun.l.google.com:19302";
-  _iceServers.push_back(iceServer);
-
-  webrtc::PeerConnectionInterface::RTCConfiguration configuration;
-  configuration.servers = _iceServers;
-
-  webrtc::FakeConstraints constraints;
-  constraints.AddOptional(webrtc::MediaConstraintsInterface::kEnableDtlsSrtp, webrtc::MediaConstraintsInterface::kValueTrue);
-  // FIXME: crashes without these constraints, why?
-  constraints.AddMandatory(webrtc::MediaConstraintsInterface::kOfferToReceiveAudio, webrtc::MediaConstraintsInterface::kValueFalse);
-  constraints.AddMandatory(webrtc::MediaConstraintsInterface::kOfferToReceiveVideo, webrtc::MediaConstraintsInterface::kValueFalse);
+  Either<std::string, webrtc::PeerConnectionInterface::RTCConfiguration> configuration =
+    Convert<webrtc::PeerConnectionInterface::RTCConfiguration, RTCConfiguration>::From(
+      rtcConfiguration);
+  if (!configuration) {
+    // TODO(mroberts): ...
+  }
 
   _jinglePeerConnectionFactory = webrtc::CreatePeerConnectionFactory(_workerThread, _signalingThread, nullptr, nullptr, nullptr);
-  _jinglePeerConnection = _jinglePeerConnectionFactory->CreatePeerConnection(configuration, &constraints, nullptr, nullptr, this);
+  _jinglePeerConnection = _jinglePeerConnectionFactory->CreatePeerConnection(*configuration, nullptr, nullptr, nullptr, this);
 
   uv_mutex_init(&lock);
   uv_async_init(loop, &async, reinterpret_cast<uv_async_cb>(Run));
@@ -252,7 +264,12 @@ NAN_METHOD(PeerConnection::New) {
     return Nan::ThrowTypeError("Use the new operator to construct the PeerConnection.");
   }
 
-  PeerConnection* obj = new PeerConnection();
+  Either<std::string, RTCConfiguration> configuration = Convert<RTCConfiguration, Local<Value>>::From(info[0]);
+  if (!configuration) {
+    return Nan::ThrowTypeError(Nan::New(configuration.left()).ToLocalChecked());
+  }
+
+  PeerConnection* obj = new PeerConnection(*configuration);
   obj->Wrap(info.This());
 
   TRACE_END;
@@ -264,7 +281,31 @@ NAN_METHOD(PeerConnection::CreateOffer) {
 
   PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.This());
 
-  self->_jinglePeerConnection->CreateOffer(self->_createOfferObserver, nullptr);
+  Either<std::string, Optional<RTCOfferOptions>> maybeOptions = Convert<Optional<RTCOfferOptions>, Local<Value>>::From(info[0]);
+  if (!maybeOptions) {
+    return Nan::ThrowTypeError(Nan::New(maybeOptions.left()).ToLocalChecked());
+  }
+
+  // NOTE(mroberts): For some reason, WebRTC doesn't work with RTCOfferAnswerOptions.
+  // RTCOfferAnswerOptions options;
+  // if (*maybeOptions) {
+  //   Either<std::string, RTCOfferAnswerOptions> eitherOptions = Convert<RTCOfferAnswerOptions, RTCOfferOptions>::From(**maybeOptions);
+  //   if (!eitherOptions) {
+  //     return Nan::ThrowTypeError(Nan::New(eitherOptions.left()).ToLocalChecked());
+  //   }
+  //   options = *eitherOptions;
+  // }
+  FakeConstraints constraints;
+  if (*maybeOptions) {
+    Either<std::string, FakeConstraints> eitherConstraints = Convert<FakeConstraints, RTCOfferOptions>::From(**maybeOptions);
+    if (!eitherConstraints) {
+      return Nan::ThrowTypeError(Nan::New(eitherConstraints.left()).ToLocalChecked());
+    }
+    constraints = *eitherConstraints;
+  }
+
+  // self->_jinglePeerConnection->CreateOffer(self->_createOfferObserver, options);
+  self->_jinglePeerConnection->CreateOffer(self->_createOfferObserver, &constraints);
 
   TRACE_END;
   info.GetReturnValue().Set(Nan::Undefined());
@@ -274,6 +315,11 @@ NAN_METHOD(PeerConnection::CreateAnswer) {
   TRACE_CALL;
 
   PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.This());
+
+  Either<std::string, Optional<RTCAnswerOptions>> options = Convert<Optional<RTCAnswerOptions>, Local<Value>>::From(info[0]);
+  if (!options) {
+    return Nan::ThrowTypeError(Nan::New(options.left()).ToLocalChecked());
+  }
 
   self->_jinglePeerConnection->CreateAnswer(self->_createAnswerObserver, nullptr);
 
@@ -285,16 +331,20 @@ NAN_METHOD(PeerConnection::SetLocalDescription) {
   TRACE_CALL;
 
   PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.This());
-  Local<Object> desc = Local<Object>::Cast(info[0]);
-  String::Utf8Value _type(desc->Get(Nan::New("type").ToLocalChecked())->ToString());
-  String::Utf8Value _sdp(desc->Get(Nan::New("sdp").ToLocalChecked())->ToString());
 
-  std::string type = *_type;
-  std::string sdp = *_sdp;
-  webrtc::SdpParseError error;
-  webrtc::SessionDescriptionInterface* sdi = webrtc::CreateSessionDescription(type, sdp, &error);
+  Either<std::string, RTCSessionDescriptionInit> descriptionInit =
+    Convert<RTCSessionDescriptionInit, Local<Value>>::From(info[0]);
+  if (!descriptionInit) {
+    return Nan::ThrowTypeError(Nan::New(descriptionInit.left()).ToLocalChecked());
+  }
 
-  self->_jinglePeerConnection->SetLocalDescription(self->_setLocalDescriptionObserver, sdi);
+  Either<std::string, SessionDescriptionInterface*> description =
+    Convert<SessionDescriptionInterface*, RTCSessionDescriptionInit>::From(*descriptionInit);
+  if (!description) {
+    return Nan::ThrowTypeError(Nan::New(description.left()).ToLocalChecked());
+  }
+
+  self->_jinglePeerConnection->SetLocalDescription(self->_setLocalDescriptionObserver, *description);
 
   TRACE_END;
   info.GetReturnValue().Set(Nan::Undefined());
@@ -304,16 +354,20 @@ NAN_METHOD(PeerConnection::SetRemoteDescription) {
   TRACE_CALL;
 
   PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.This());
-  Local<Object> desc = Local<Object>::Cast(info[0]);
-  String::Utf8Value _type(desc->Get(Nan::New("type").ToLocalChecked())->ToString());
-  String::Utf8Value _sdp(desc->Get(Nan::New("sdp").ToLocalChecked())->ToString());
 
-  std::string type = *_type;
-  std::string sdp = *_sdp;
-  webrtc::SdpParseError error;
-  webrtc::SessionDescriptionInterface* sdi = webrtc::CreateSessionDescription(type, sdp, &error);
+  Either<std::string, RTCSessionDescriptionInit> descriptionInit =
+    Convert<RTCSessionDescriptionInit, Local<Value>>::From(info[0]);
+  if (!descriptionInit) {
+    return Nan::ThrowTypeError(Nan::New(descriptionInit.left()).ToLocalChecked());
+  }
 
-  self->_jinglePeerConnection->SetRemoteDescription(self->_setRemoteDescriptionObserver, sdi);
+  Either<std::string, SessionDescriptionInterface*> description =
+    Convert<SessionDescriptionInterface*, RTCSessionDescriptionInit>::From(*descriptionInit);
+  if (!description) {
+    return Nan::ThrowTypeError(Nan::New(description.left()).ToLocalChecked());
+  }
+
+  self->_jinglePeerConnection->SetRemoteDescription(self->_setRemoteDescriptionObserver, *description);
 
   TRACE_END;
   info.GetReturnValue().Set(Nan::Undefined());
@@ -444,15 +498,13 @@ NAN_GETTER(PeerConnection::GetLocalDescription) {
   TRACE_CALL;
 
   PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.Holder());
-  const webrtc::SessionDescriptionInterface* sdi = self->_jinglePeerConnection->local_description();
+  const SessionDescriptionInterface* description = self->_jinglePeerConnection->local_description();
 
-  Handle<Value> value;
-  if (nullptr == sdi) {
-    value = Nan::Null();
-  } else {
-    std::string sdp;
-    sdi->ToString(&sdp);
-    value = Nan::New(sdp.c_str()).ToLocalChecked();
+  Local<Value> value = Nan::Null();
+  if (description != nullptr) {
+    RTCSessionDescriptionInit descriptionInit =
+      Convert<const SessionDescriptionInterface*, RTCSessionDescriptionInit>::To(description);
+    value = Convert<RTCSessionDescriptionInit, Local<Value>>::To(descriptionInit);
   }
 
   TRACE_END;
@@ -467,15 +519,13 @@ NAN_GETTER(PeerConnection::GetRemoteDescription) {
   TRACE_CALL;
 
   PeerConnection* self = Nan::ObjectWrap::Unwrap<PeerConnection>(info.Holder());
-  const webrtc::SessionDescriptionInterface* sdi = self->_jinglePeerConnection->remote_description();
+  const SessionDescriptionInterface* description = self->_jinglePeerConnection->remote_description();
 
-  Handle<Value> value;
-  if (nullptr == sdi) {
-    value = Nan::Null();
-  } else {
-    std::string sdp;
-    sdi->ToString(&sdp);
-    value = Nan::New(sdp.c_str()).ToLocalChecked();
+  Local<Value> value = Nan::Null();
+  if (description != nullptr) {
+    RTCSessionDescriptionInit descriptionInit =
+      Convert<const SessionDescriptionInterface*, RTCSessionDescriptionInit>::To(description);
+    value = Convert<RTCSessionDescriptionInit, Local<Value>>::To(descriptionInit);
   }
 
   TRACE_END;

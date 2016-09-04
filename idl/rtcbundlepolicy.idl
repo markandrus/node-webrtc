@@ -1,0 +1,5 @@
+enum RTCBundlePolicy {
+  "balanced",
+  "max-compat",
+  "max-bundle"
+};

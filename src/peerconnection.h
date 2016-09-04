@@ -16,6 +16,8 @@
 #include "webrtc/api/statstypes.h"
 #include "webrtc/base/scoped_ref_ptr.h"
 
+#include "src/idl/rtcconfiguration.h"
+
 namespace node_webrtc {
 
 class CreateOfferObserver;
@@ -113,7 +115,7 @@ class PeerConnection
                   ICE_GATHERING_STATE_CHANGE
   };
 
-  PeerConnection();
+  PeerConnection(node_webrtc::RTCConfiguration configuration);
   ~PeerConnection();
 
   //

@@ -1,0 +1,10 @@
+dictionary RTCConfiguration {
+  sequence<RTCIceServer> iceServers;
+  RTCIceTransportPolicy iceTransportPolicy = "all";
+  RTCBundlePolicy bundlePolicy = "balanced";
+  RTCRtcpMuxPolicy rtcpMuxPolicy = "require";
+  DOMString peerIdentity;
+  // NOTE(mroberts): No support for certificates yet.
+  // sequence<RTCCertificate> certificates;
+  unsigned short iceCandidatePoolSize = 0;
+};

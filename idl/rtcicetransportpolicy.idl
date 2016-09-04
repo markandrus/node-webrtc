@@ -1,0 +1,4 @@
+enum RTCIceTransportPolicy {
+  "relay",
+  "all"
+};

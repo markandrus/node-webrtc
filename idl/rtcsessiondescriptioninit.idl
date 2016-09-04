@@ -1,0 +1,4 @@
+dictionary RTCSessionDescriptionInit {
+  required RTCSdpType type;
+  DOMString sdp;
+};
